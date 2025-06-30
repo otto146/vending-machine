@@ -17,9 +17,6 @@ public class RecognitionService {
 
         RecognitionResult recognitionResult = new RecognitionResult();
 
-        //为了保证不重复但不需要保证有序，用map去接数据
-        Map<Integer, Integer> openLayersMap = new HashMap<>();
-        Map<Integer, Integer> closeLayersMap = new HashMap<>();
         //识别出来的商品集合
         List<RecognitionItem> recognitionItems = new ArrayList<>();
         //识别异常集合
@@ -111,19 +108,64 @@ public class RecognitionService {
                 }
                 if (matched) break; // 找到了就不试别的商品了
             }
-            // 如果没有匹配成功，说明无法识别（可能是组合、可能是误差），记异常
+
             if (!matched) {
-                recognitionExceptions.add(
-                        new RecognitionException(layer, ExceptionEnum.UNRECOGNIZABLE, openLayers.get(i).getWeight(), closeLayers.get(i).getWeight())
-                );
+                // 单个商品识别失败，尝试组合识别
+                // 准备一个列表保存所有符合的商品组合
+                List<Map<String, Integer>> validCombos = new ArrayList<>();
+                findCombinations(currentLayerStocks, goodsList, 0, delta, new HashMap<>(), validCombos);
+                //如果只有一种组合就认为识别成功
+                if (validCombos.size() == 1) {
+                    Map<String, Integer> combo = validCombos.get(0);
+                    for (Map.Entry<String, Integer> entry : combo.entrySet()) {
+                        recognitionItems.add(new RecognitionItem(entry.getKey(), entry.getValue()));
+                    }
+                    //如果是找不到组合或者是多种组合，就确定不了具体的商品，认为异常
+                } else {
+                    recognitionExceptions.add(
+                            new RecognitionException(layer, ExceptionEnum.UNRECOGNIZABLE, beginWeight, endWeight)
+                    );
+                }
             }
         }
         recognitionResult.setSuccessful(recognitionExceptions.isEmpty());
         return recognitionResult;
     }
 
+    //组合识别
+    private void findCombinations(List<Stock> stockList, List<Goods> goodsList,
+                                  int index, int delta,
+                                  Map<String, Integer> currentCombo,
+                                  List<Map<String, Integer>> validCombos) {
+        //如果刚好匹配就说明找到组合了
+        if (delta == 0) {
+            validCombos.add(new HashMap<>(currentCombo));
+            return;
+        }
+
+        if (index >= stockList.size()) return;
+
+        Stock stock = stockList.get(index);
+        String goodsId = stock.getGoodsId();
+        int maxCount = stock.getNum();
+
+        // 查找商品重量
+        int unitWeight = 0;
+        for (int i = 0; i < goodsList.size(); i++) {
+            Goods goods = goodsList.get(i);
+            if (goods.getId().equals(goodsId)) {
+                unitWeight = goods.getWeight();
+                break;
+            }
+        }
+        // 尝试从 0 个到 maxCount 个商品的各种组合
+        for (int count = 0; count <= maxCount; count++) {
+            int usedWeight = count * unitWeight;
+            if (usedWeight > delta) break;
+
+            if (count > 0) currentCombo.put(goodsId, count);
+            findCombinations(stockList, goodsList, index + 1, delta - usedWeight, currentCombo, validCombos);
+            if (count > 0) currentCombo.remove(goodsId); // 回溯
+        }
+    }
 }
-
-
-
-
