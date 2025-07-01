@@ -1,5 +1,6 @@
 package com.example.exam.pojo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class RecognitionResult {
@@ -7,9 +8,9 @@ public class RecognitionResult {
     // 没有任何异常时，为 true
     private boolean successful;
     // 允许 empty 不允许 null；成功且为 empty 时即为无购物
-    private List<RecognitionItem> items;
+    private List<RecognitionItem> items = new ArrayList<>();
     // 允许 empty 不允许 null
-    private List<RecognitionException> exceptions;
+    private List<RecognitionException> exceptions = new ArrayList<>();
 
     public boolean isSuccessful() {
         return successful;
