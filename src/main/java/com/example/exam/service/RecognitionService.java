@@ -167,17 +167,17 @@ public class RecognitionService {
     private void findCombinations(List<Stock> stockList, List<Goods> goodsList,
                                   //index表示当前商品的索引
                                   int index,
-                                  Map<String, Integer> currentCombo,
-                                  List<Map<String, Integer>> validCombos,
+                                  Map<String, Integer> currentCombo,//商品的组合集合
+                                  List<Map<String, Integer>> validCombos,//有效的商品组合集合
                                   //目标区间
                                   double targetMin, double targetMax,
                                   //组合区间
                                   double comboMin, double comboMax) {
 
-        // 已枚举完所有商品
+        // 遍历完全部商品再开始判断
         if (index >= stockList.size()) {
-            // 当前组合区间 与 目标区间 有交集
-            if (comboMin >= targetMin && comboMax <= targetMax && currentCombo.size() >= 2) {
+            // 当前组合区间与目标区间有交集
+            if (comboMax >= targetMin && comboMin <= targetMax && currentCombo.size() >= 2) {
                 validCombos.add(new HashMap<>(currentCombo));
             }
             return;
@@ -194,19 +194,21 @@ public class RecognitionService {
             }
         }
         if (matched == null) return;
-
+        //考虑包装误差计算当前商品的最大最小重量
         double unitMin = matched.getWeight() * (1 - matched.getPackageTolerance() / 100.0);
         double unitMax = matched.getWeight() * (1 + matched.getPackageTolerance() / 100.0);
 
         for (int count = 1; count <= maxCount; count++) {
             double addMin = count * unitMin;
             double addMax = count * unitMax;
-
+            //将当前商品加入组合
             currentCombo.put(goodsId, count);
+            //递归处理下一个商品
             findCombinations(stockList, goodsList, index + 1,
                     currentCombo, validCombos,
                     targetMin, targetMax,
                     comboMin + addMin, comboMax + addMax);
+            //将当前商品从组合中移除
             currentCombo.remove(goodsId);
 
             if (validCombos.size() > 1) return; // 多解则提前终止
