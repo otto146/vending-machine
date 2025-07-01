@@ -18,13 +18,14 @@ public class RecognitionService {
 
         RecognitionResult recognitionResult = new RecognitionResult();
 
-        //识别出来的商品集合
+
+
+        //最终结果集合
         List<RecognitionItem> recognitionItems = new ArrayList<>();
+
         //识别异常集合
         List<RecognitionException> recognitionExceptions = new ArrayList<>();
 
-        recognitionResult.setItems(recognitionItems);
-        recognitionResult.setExceptions(recognitionExceptions);
 
         int totalOpenLayersWeight = 0;
         for (int i = 0; i < 10; i++) {
@@ -53,8 +54,7 @@ public class RecognitionService {
             int endWeight = closeLayers.get(i).getWeight();
             //层架编号
             int layer = i + 1;
-            //识别结果
-            boolean matched = false;
+
             //开门时重量减去关门时重量
             int delta = beginWeight - endWeight;
             //添加容差处理，负号就是左边界，如果差值比左边界小说明关门的时候的重量比开门的时候的大，也就是往里面放东西了
@@ -73,8 +73,16 @@ public class RecognitionService {
             //先试试单个商品的，从1到库存大小
             //用差值去减商品重量，如果为0说明找到商品了
             //当前的层架编号i，先根据stock找到商品id
+
             //先来个集合存当前层架的Stock
             List<Stock> currentLayerStocks = new ArrayList<>();
+
+            //识别出来的单商品集合
+            List<RecognitionItem> SingleRecognitionItems = new ArrayList<>();
+
+            //识别出来的组合商品集合
+            List<Map<String, Integer>> validCombos = new ArrayList<>();
+
             for (int j = 0; j < stockList.size(); j++) {
                 Stock stock = stockList.get(j);
                 //如果层架编号相同就加入到集合中
@@ -82,6 +90,7 @@ public class RecognitionService {
                     currentLayerStocks.add(stock);
                 }
             }
+
             //现在可以尝试单个商品匹配delta
             for (int k = 0; k < currentLayerStocks.size(); k++) {
                 Stock stock = currentLayerStocks.get(k);
@@ -105,9 +114,8 @@ public class RecognitionService {
                         // 说明识别成功，用户在当前层拿了 count 个 goodsId 商品
                         System.out.println("用户在第 " + layer + " 层拿了 " + count + " 个商品：" + goodsId);
 
-                        // 加入识别结果（RecognitionItem）
-                        recognitionItems.add(new RecognitionItem(goodsId, count));
-                        matched = true;
+                        // 加入单商品识别结果
+                        SingleRecognitionItems.add(new RecognitionItem(goodsId, count));
                         break;
                     }
                 }
@@ -116,77 +124,80 @@ public class RecognitionService {
             double targetMin = delta - sensorTolerance;
             double targetMax = delta + sensorTolerance;
 
-            if (!matched) {
-                // 单个商品识别失败，尝试组合识别
-                // 准备一个列表保存所有符合的商品组合
-                List<Map<String, Integer>> validCombos = new ArrayList<>();
-                findCombinations(currentLayerStocks, goodsList, 0, new HashMap<>(), validCombos, targetMin, targetMax,
-                        0, 0);
-                //如果只有一种组合就认为识别成功
-                if (validCombos.size() == 1) {
-                    Map<String, Integer> combo = validCombos.get(0);
-                    for (Map.Entry<String, Integer> entry : combo.entrySet()) {
-                        recognitionItems.add(new RecognitionItem(entry.getKey(), entry.getValue()));
-                    }
-                    //如果是找不到组合或者是多种组合，就确定不了具体的商品，认为异常
-                } else {
-                    recognitionExceptions.add(
-                            new RecognitionException(layer, ExceptionEnum.UNRECOGNIZABLE, beginWeight, endWeight)
-                    );
+            // 单个商品识别失败，尝试组合识别
+
+            findCombinations(currentLayerStocks, goodsList, 0, new HashMap<>(), validCombos, targetMin, targetMax,
+                    0, 0);
+            //如果只有一种组合就认为识别成功
+
+
+            // 最终判断
+            if (SingleRecognitionItems.size() == 1 && validCombos.isEmpty()) {
+                recognitionItems.add(SingleRecognitionItems.get(0));
+            } else if (validCombos.size() == 1 && SingleRecognitionItems.isEmpty()) {
+                for (Map.Entry<String, Integer> entry : validCombos.get(0).entrySet()) {
+                    recognitionItems.add(new RecognitionItem(entry.getKey(), entry.getValue()));
                 }
+            } else {
+                recognitionExceptions.add(
+                        new RecognitionException(layer, ExceptionEnum.UNRECOGNIZABLE, beginWeight, endWeight)
+                );
             }
+
         }
+        recognitionResult.setItems(recognitionItems);
+        recognitionResult.setExceptions(recognitionExceptions);
         recognitionResult.setSuccessful(recognitionExceptions.isEmpty());
         return recognitionResult;
     }
 
-    //组合识别
-    private void findCombinations(List<Stock> stockList, List<Goods> goodsList,
-                                  //index表示当前商品的索引
-                                  int index,
-                                  Map<String, Integer> currentCombo,
-                                  List<Map<String, Integer>> validCombos,
-                                  //目标区间
-                                  double targetMin, double targetMax,
-                                  //组合区间
-                                  double comboMin, double comboMax) {
+        //组合识别
+        private void findCombinations (List < Stock > stockList, List < Goods > goodsList,
+        //index表示当前商品的索引
+        int index,
+        Map<String, Integer> currentCombo,
+        List<Map<String, Integer>> validCombos,
+        //目标区间
+        double targetMin, double targetMax,
+        //组合区间
+        double comboMin, double comboMax){
 
-        // 已枚举完所有商品
-        if (index >= stockList.size()) {
-            // 当前组合区间 与 目标区间 有交集
-            if (comboMax >= targetMin && comboMin <= targetMax) {
-                validCombos.add(new HashMap<>(currentCombo));
+            // 已枚举完所有商品
+            if (index >= stockList.size()) {
+                // 当前组合区间 与 目标区间 有交集
+                if (comboMax >= targetMin && comboMin <= targetMax) {
+                    validCombos.add(new HashMap<>(currentCombo));
+                }
+                return;
             }
-            return;
-        }
-        Stock stock = stockList.get(index);
-        String goodsId = stock.getGoodsId();
-        int maxCount = stock.getNum();
+            Stock stock = stockList.get(index);
+            String goodsId = stock.getGoodsId();
+            int maxCount = stock.getNum();
 
-        Goods matched = null;
-        for (Goods g : goodsList) {
-            if (g.getId().equals(goodsId)) {
-                matched = g;
-                break;
+            Goods matched = null;
+            for (Goods g : goodsList) {
+                if (g.getId().equals(goodsId)) {
+                    matched = g;
+                    break;
+                }
             }
-        }
-        if (matched == null) return;
+            if (matched == null) return;
 
-        double unitMin = matched.getWeight() * (1 - matched.getPackageTolerance() / 100.0);
-        double unitMax = matched.getWeight() * (1 + matched.getPackageTolerance() / 100.0);
+            double unitMin = matched.getWeight() * (1 - matched.getPackageTolerance() / 100.0);
+            double unitMax = matched.getWeight() * (1 + matched.getPackageTolerance() / 100.0);
 
-        for (int count = 0; count <= maxCount; count++) {
-            double addMin = count * unitMin;
-            double addMax = count * unitMax;
+            for (int count = 0; count <= maxCount; count++) {
+                double addMin = count * unitMin;
+                double addMax = count * unitMax;
 
-            if (count > 0) currentCombo.put(goodsId, count);
-            findCombinations(stockList, goodsList, index + 1,
-                    currentCombo, validCombos,
-                    targetMin, targetMax,
-                    comboMin + addMin, comboMax + addMax);
-            if (count > 0) currentCombo.remove(goodsId);
+                if (count > 0) currentCombo.put(goodsId, count);
+                findCombinations(stockList, goodsList, index + 1,
+                        currentCombo, validCombos,
+                        targetMin, targetMax,
+                        comboMin + addMin, comboMax + addMax);
+                if (count > 0) currentCombo.remove(goodsId);
 
-            if (validCombos.size() > 1) return; // 多解则提前终止
+                if (validCombos.size() > 1) return; // 多解则提前终止
+            }
         }
     }
-}
