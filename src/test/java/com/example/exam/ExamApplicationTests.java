@@ -18,6 +18,7 @@ class ExamApplicationTests {
 
     private final RecognitionService service = new RecognitionService();
 
+    // 无交易的测试用例
     @Test
     void testNoTransaction() {
         List<Layer> open = layers(100, 200, 300, 400, 500, 600, 700, 800, 900, 1000);
@@ -30,6 +31,7 @@ class ExamApplicationTests {
         assertTrue(result.getExceptions().isEmpty());
     }
 
+    // 单个物品被识别的测试用例
     @Test
     void testSingleItemTaken() {
         Goods g1 = new Goods("A", 100, 0);
@@ -46,6 +48,7 @@ class ExamApplicationTests {
         assertEquals(1, result.getItems().get(0).getNum());
     }
 
+    // 识别放了物品进货柜的测试用例
     @Test
     void testPutItemBackAsForeignObject() {
         List<Layer> open = layers(100, 200, 300, 400, 500, 600, 700, 800, 900, 1000);
@@ -58,6 +61,7 @@ class ExamApplicationTests {
         assertEquals(ExceptionEnum.FOREIGN_OBJECT, result.getExceptions().get(0).getException());
     }
 
+    //组合商品识别测试用例
     @Test
     void testComboRecognition() {
         Goods g1 = new Goods("A", 100, 5);
