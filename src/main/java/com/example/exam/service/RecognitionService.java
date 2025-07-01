@@ -111,7 +111,6 @@ public class RecognitionService {
                         break;
                     }
                 }
-                if (matched) break; // 找到了就不试别的商品了
             }
 
             double targetMin = delta - sensorTolerance;
