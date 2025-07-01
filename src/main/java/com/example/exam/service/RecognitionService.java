@@ -19,7 +19,6 @@ public class RecognitionService {
         RecognitionResult recognitionResult = new RecognitionResult();
 
 
-
         //最终结果集合
         List<RecognitionItem> recognitionItems = new ArrayList<>();
 
@@ -127,20 +126,32 @@ public class RecognitionService {
                     0, 0);
             //如果只有一种组合就认为识别成功
 
+            Map<String, Integer> mergedItemsMap = new HashMap<>();
 
-            // 最终判断
-            if (SingleRecognitionItems.size() == 1 && validCombos.isEmpty()) {
-                recognitionItems.add(SingleRecognitionItems.get(0));
+            if (!SingleRecognitionItems.isEmpty() && validCombos.isEmpty()) {
+                // 只有单商品结果，放入结果
+                for (RecognitionItem item : SingleRecognitionItems) {
+                    mergedItemsMap.put(item.getGoodsId(),
+                            mergedItemsMap.getOrDefault(item.getGoodsId(), 0) + item.getNum());
+                }
             } else if (validCombos.size() == 1 && SingleRecognitionItems.isEmpty()) {
+                // 只有组合结果，放入结果
                 for (Map.Entry<String, Integer> entry : validCombos.get(0).entrySet()) {
-                    recognitionItems.add(new RecognitionItem(entry.getKey(), entry.getValue()));
+                    mergedItemsMap.put(entry.getKey(),
+                            mergedItemsMap.getOrDefault(entry.getKey(), 0) + entry.getValue());
                 }
             } else {
+                // 两者都有解或者两者都没解，算异常
                 recognitionExceptions.add(
                         new RecognitionException(layer, ExceptionEnum.UNRECOGNIZABLE, beginWeight, endWeight)
                 );
             }
 
+            if (!mergedItemsMap.isEmpty()) {
+                for (Map.Entry<String, Integer> entry : mergedItemsMap.entrySet()) {
+                    recognitionItems.add(new RecognitionItem(entry.getKey(), entry.getValue()));
+                }
+            }
         }
         recognitionResult.setItems(recognitionItems);
         recognitionResult.setExceptions(recognitionExceptions);
