@@ -128,7 +128,7 @@ public class RecognitionService {
 
             Map<String, Integer> mergedItemsMap = new HashMap<>();
 
-            if (!SingleRecognitionItems.isEmpty() && validCombos.isEmpty()) {
+            if (SingleRecognitionItems.size() == 1 && validCombos.isEmpty()) {
                 // 只有单商品结果，放入结果
                 for (RecognitionItem item : SingleRecognitionItems) {
                     mergedItemsMap.put(item.getGoodsId(),
@@ -152,60 +152,64 @@ public class RecognitionService {
                     recognitionItems.add(new RecognitionItem(entry.getKey(), entry.getValue()));
                 }
             }
+            System.out.println("SingleRecognitionItems size: " + SingleRecognitionItems.size());
+            System.out.println("validCombos size: " + validCombos.size());
+
         }
+
         recognitionResult.setItems(recognitionItems);
         recognitionResult.setExceptions(recognitionExceptions);
         recognitionResult.setSuccessful(recognitionExceptions.isEmpty());
         return recognitionResult;
     }
 
-        //组合识别
-        private void findCombinations (List < Stock > stockList, List < Goods > goodsList,
-        //index表示当前商品的索引
-        int index,
-        Map<String, Integer> currentCombo,
-        List<Map<String, Integer>> validCombos,
-        //目标区间
-        double targetMin, double targetMax,
-        //组合区间
-        double comboMin, double comboMax){
+    //组合识别
+    private void findCombinations(List<Stock> stockList, List<Goods> goodsList,
+                                  //index表示当前商品的索引
+                                  int index,
+                                  Map<String, Integer> currentCombo,
+                                  List<Map<String, Integer>> validCombos,
+                                  //目标区间
+                                  double targetMin, double targetMax,
+                                  //组合区间
+                                  double comboMin, double comboMax) {
 
-            // 已枚举完所有商品
-            if (index >= stockList.size()) {
-                // 当前组合区间 与 目标区间 有交集
-                if (comboMax >= targetMin && comboMin <= targetMax) {
-                    validCombos.add(new HashMap<>(currentCombo));
-                }
-                return;
+        // 已枚举完所有商品
+        if (index >= stockList.size()) {
+            // 当前组合区间 与 目标区间 有交集
+            if (comboMin >= targetMin && comboMax <= targetMax && currentCombo.size() >= 2) {
+                validCombos.add(new HashMap<>(currentCombo));
             }
-            Stock stock = stockList.get(index);
-            String goodsId = stock.getGoodsId();
-            int maxCount = stock.getNum();
+            return;
+        }
+        Stock stock = stockList.get(index);
+        String goodsId = stock.getGoodsId();
+        int maxCount = stock.getNum();
 
-            Goods matched = null;
-            for (Goods g : goodsList) {
-                if (g.getId().equals(goodsId)) {
-                    matched = g;
-                    break;
-                }
-            }
-            if (matched == null) return;
-
-            double unitMin = matched.getWeight() * (1 - matched.getPackageTolerance() / 100.0);
-            double unitMax = matched.getWeight() * (1 + matched.getPackageTolerance() / 100.0);
-
-            for (int count = 0; count <= maxCount; count++) {
-                double addMin = count * unitMin;
-                double addMax = count * unitMax;
-
-                if (count > 0) currentCombo.put(goodsId, count);
-                findCombinations(stockList, goodsList, index + 1,
-                        currentCombo, validCombos,
-                        targetMin, targetMax,
-                        comboMin + addMin, comboMax + addMax);
-                if (count > 0) currentCombo.remove(goodsId);
-
-                if (validCombos.size() > 1) return; // 多解则提前终止
+        Goods matched = null;
+        for (Goods g : goodsList) {
+            if (g.getId().equals(goodsId)) {
+                matched = g;
+                break;
             }
         }
+        if (matched == null) return;
+
+        double unitMin = matched.getWeight() * (1 - matched.getPackageTolerance() / 100.0);
+        double unitMax = matched.getWeight() * (1 + matched.getPackageTolerance() / 100.0);
+
+        for (int count = 1; count <= maxCount; count++) {
+            double addMin = count * unitMin;
+            double addMax = count * unitMax;
+
+            currentCombo.put(goodsId, count);
+            findCombinations(stockList, goodsList, index + 1,
+                    currentCombo, validCombos,
+                    targetMin, targetMax,
+                    comboMin + addMin, comboMax + addMax);
+            currentCombo.remove(goodsId);
+
+            if (validCombos.size() > 1) return; // 多解则提前终止
+        }
     }
+}
