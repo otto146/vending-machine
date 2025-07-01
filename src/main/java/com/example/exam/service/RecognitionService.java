@@ -41,7 +41,7 @@ public class RecognitionService {
         //相同的情况
         //如果差值小于容差则认为没出货
         int totalDelta = totalOpenLayersWeight - totalCloseLayersWeight;
-        if (totalDelta <= sensorTolerance) {
+        if (Math.abs(totalDelta) <= sensorTolerance) {
             recognitionResult.setSuccessful(true);
             return recognitionResult;
         }
