@@ -83,8 +83,7 @@ public class RecognitionService {
             //识别出来的组合商品集合
             List<Map<String, Integer>> validCombos = new ArrayList<>();
 
-            for (int j = 0; j < stockList.size(); j++) {
-                Stock stock = stockList.get(j);
+            for (Stock stock : stockList) {
                 //如果层架编号相同就加入到集合中
                 if (stock.getLayer() == layer) {
                     currentLayerStocks.add(stock);
@@ -92,15 +91,13 @@ public class RecognitionService {
             }
 
             //现在可以尝试单个商品匹配delta
-            for (int k = 0; k < currentLayerStocks.size(); k++) {
-                Stock stock = currentLayerStocks.get(k);
+            for (Stock stock : currentLayerStocks) {
                 //现在我们拿到商品ID和对应的库存了
                 String goodsId = stock.getGoodsId();
                 int maxCount = stock.getNum();
                 // 查找商品的重量
                 int unitWeight = 0;
-                for (int g = 0; g < goodsList.size(); g++) {
-                    Goods goods = goodsList.get(g);
+                for (Goods goods : goodsList) {
                     if (goods.getId().equals(goodsId)) {
                         unitWeight = goods.getWeight();
                         //找到商品了就不要循环下去了不然就覆盖了
