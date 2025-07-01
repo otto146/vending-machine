@@ -57,12 +57,14 @@ public class RecognitionService {
             boolean matched = false;
             //开门时重量减去关门时重量
             int delta = beginWeight - endWeight;
-            if (delta < 0) {
+            //添加容差处理，负号就是左边界，如果差值比左边界小说明关门的时候的重量比开门的时候的大，也就是往里面放东西了
+            if (delta < -sensorTolerance) {
                 recognitionExceptions.add(
                         new RecognitionException(layer, ExceptionEnum.FOREIGN_OBJECT, beginWeight, endWeight));
                 continue;
             }
-            if (delta == 0) {
+            //差值的绝对值小于等于容差识别为无购物
+            if (Math.abs(delta) <= sensorTolerance) {
                 continue;
             }
 
