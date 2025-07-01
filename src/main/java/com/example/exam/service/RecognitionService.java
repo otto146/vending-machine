@@ -39,7 +39,9 @@ public class RecognitionService {
 
         //可以先判断开门前后的总重量对比，相同说明没出货，不同则说明出货了
         //相同的情况
-        if (totalOpenLayersWeight == totalCloseLayersWeight) {
+        //如果差值小于容差则认为没出货
+        int totalDelta = totalOpenLayersWeight - totalCloseLayersWeight;
+        if (totalDelta <= sensorTolerance) {
             recognitionResult.setSuccessful(true);
             return recognitionResult;
         }
