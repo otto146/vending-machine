@@ -70,8 +70,9 @@ class ExamApplicationTests {
 
         RecognitionResult result = service.recognition(open, close, List.of(g1, g2), List.of(s1, s2), 5);
 
-        assertTrue(result.isSuccessful());
-        assertEquals(2, result.getItems().size());
+        assertFalse(result.isSuccessful());
+        assertEquals(1, result.getExceptions().size());
+        assertEquals(ExceptionEnum.UNRECOGNIZABLE, result.getExceptions().get(0).getException());
     }
 
     private List<Layer> layers(int... weights) {
