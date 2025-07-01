@@ -35,8 +35,16 @@ public class Goods {
         this.weight = weight;
     }
 
-    public void setPackageTolerance(double packageTolerance){
+    public void setPackageTolerance(double packageTolerance) {
         this.packageTolerance = packageTolerance;
     }
 
+    public double minWeight() {
+        return weight * (1 - packageTolerance / 100.0);
+    }
+
+    public double maxWeight() {
+        return weight * (1 + packageTolerance / 100.0);
+    }
 }
+
