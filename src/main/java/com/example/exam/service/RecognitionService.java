@@ -12,7 +12,8 @@ public class RecognitionService {
     public RecognitionResult recognition(List<Layer> openLayers,
                                          List<Layer> closeLayers,
                                          List<Goods> goodsList,
-                                         List<Stock> stockList) {
+                                         List<Stock> stockList,
+                                         int sensorTolerance) {
 
 
         RecognitionResult recognitionResult = new RecognitionResult();
