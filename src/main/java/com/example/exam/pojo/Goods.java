@@ -2,30 +2,41 @@ package com.example.exam.pojo;
 
 public class Goods {
     private String id;
+    private int weight;
+    private double packageTolerance;
 
-    public Goods(String id, int weight) {
+    public Goods(String id, int weight, double packageTolerance) {
         this.id = id;
         this.weight = weight;
-    }
-
-    public String getId() {
-        return id;
+        this.packageTolerance = packageTolerance;
     }
 
     public Goods() {
     }
 
-    public void setId(String id) {
-        this.id = id;
+
+    public String getId() {
+        return id;
+    }
+
+    public double getPackageTolerance() {
+        return packageTolerance;
     }
 
     public int getWeight() {
         return weight;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public void setWeight(int weight) {
         this.weight = weight;
     }
 
-    private int weight;
+    public void setPackageTolerance(double packageTolerance){
+        this.packageTolerance = packageTolerance;
+    }
+
 }
