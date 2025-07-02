@@ -3,6 +3,7 @@ package com.example.exam.pojo;
 public class Stock {
     private String goodsId;
     private int layer;
+    private int num;
 
     public String getGoodsId() {
         return goodsId;
@@ -37,5 +38,5 @@ public class Stock {
         this.num = num;
     }
 
-    private int num;
+
 }
